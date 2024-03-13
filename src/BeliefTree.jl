@@ -17,9 +17,9 @@ function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new::V
 end
 
 
-function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64, pomdp)
+function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning)
     # choose the best action
-    # a = ChooseActionUpperBound()
+    a_best, U = EvaluateUpperBound(root._state_particles, Q_learning_policy)
     # choose an observation
     # o = ChooseObservation()
     if haskey(root._child_nodes[Pair(a, o)])

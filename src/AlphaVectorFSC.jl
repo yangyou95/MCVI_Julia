@@ -10,7 +10,6 @@ mutable struct FscNode
     _best_action_update::Dict{Any,Bool}
 end
 
-
 mutable struct FSC
     _eta::Vector{Dict{Pair{Any,Int64},Int64}}
     _nodes::Vector{FscNode}

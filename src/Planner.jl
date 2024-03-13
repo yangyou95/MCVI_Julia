@@ -1,9 +1,6 @@
-include("./AlphaVectorFSC.jl")
 include("./BeliefTree.jl")
-using POMDPModels
-using POMDPs
-using POMDPModelTools
-using Random
+include("./Bounds.jl")
+
 
 function SimulateTrajectory(nI::Int64, fsc::FSC, s::Any,  L::Int64, pomdp) 
     gamma = discount(pomdp)
@@ -261,61 +258,6 @@ end
 
 
 function EvaluationWithSimulationFSC(b0, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64)
-
-	sum_r = 0.0
-	sum_r_valid = 0.0
-	sum_unvalid_search = 0
-
-
-	# set a default action
-	a_safe = GetBestAction(fsc._nodes[1]) # should be a safe action, or a greedy action 
-
-	for sim_i in 1:nb_sim
-		step = 0
-		sum_r_sim_i = 0.0
-		s = rand(b0)
-		nI = 1
-		bool_random_pi = false
-		bool_sim_i_invalid = false
-
-		while (discount^step) > 0.01 && isterminal(pomdp, s) == false
-			if bool_random_pi == true && bool_sim_i_invalid == false
-				bool_sim_i_invalid = true
-				sum_unvalid_search += 1
-			end
-
-			if nI == -1
-				bool_random_pi = true
-			# elseif fsc._nodes[nI]._visits_node == 0
-			# 	bool_random_pi = true
-			end
-
-			if bool_random_pi
-				# a = rand(fsc._action_space)
-				a = a_safe
-			else
-				a = GetBestAction(fsc._nodes[nI])
-			end
-
-			sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
-			s = sp
-			sum_r_sim_i += (discount^step) * r
-
-			if haskey(fsc._eta[nI], Pair(a, o))
-				nI = fsc._eta[nI][Pair(a, o)]
-			else
-				bool_random_pi = true
-			end
-			step += 1
-		end
-		sum_r += sum_r_sim_i
-		if bool_sim_i_invalid == false
-			sum_r_valid += sum_r_sim_i
-		end
-	end
-
-	println("avg sum:", sum_r / nb_sim)
-	println("avg sum valid search:", sum_r_valid / (nb_sim - sum_unvalid_search))
-	println("unvalid search:", sum_unvalid_search / nb_sim)
+	println("avg sum:", EvaluateLowerBound(b0, pomdp, fsc, discount, nb_sim))
 end
 
