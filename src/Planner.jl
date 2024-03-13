@@ -261,3 +261,10 @@ function EvaluationWithSimulationFSC(b0, pomdp, fsc::FSC, discount::Float64, nb_
 	println("avg sum:", EvaluateLowerBound(b0, pomdp, fsc, discount, nb_sim))
 end
 
+
+function EvaluateNodeBounds(node::BeliefTreeNode, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64, V_mdp::Qlearning)
+    a, U = EvaluateUpperBound(node._state_particles, V_mdp)
+    L = EvaluateLowerBound(node._state_particles, pomdp, fsc, discount, nb_sim)
+    node._upper_bound = U
+    node._lower_bound = L
+end

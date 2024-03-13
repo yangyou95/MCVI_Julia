@@ -17,11 +17,36 @@ function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new::V
 end
 
 
+
+
 function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning)
     # choose the best action
-    a_best, U = EvaluateUpperBound(root._state_particles, Q_learning_policy)
-    # choose an observation
-    # o = ChooseObservation()
+    a, U = EvaluateUpperBound(root._state_particles, Q_learning_policy)
+    # choose an observation that maximiz (U - L) for every b_a_o
+    obs_space = observations(POMDP)
+    largest_gap = typemin(Float64)
+    o_selected = rand(obs_space)
+
+
+
+    # if node has childs 
+    for o in obs_space
+        ao_edge = Pair(a, o)
+        if haskey(root._child_nodes[ao_edge])
+            U_child = root._child_nodes[ao_edge]._upper_bound
+            L_child = root._child_nodes[ao_edge]._lower_bound
+            gap_child = U_child - L_child
+            if gap_child > largest_gap
+                largest_gap = gap_child
+                o_selected = o
+            end            
+        end
+    end 
+
+    # what if node doesn't have childs 
+
+
+
     if haskey(root._child_nodes[Pair(a, o)])
         push!(b_list, root._state_particles)
         SampleBeliefs(root._child_nodes[Pair(a, o)], b_list, nb_sim, pomdp)
