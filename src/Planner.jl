@@ -1,4 +1,5 @@
 include("./AlphaVectorFSC.jl")
+include("./BeliefTree.jl")
 using POMDPModels
 using POMDPs
 using POMDPModelTools
@@ -116,21 +117,7 @@ function BackUp(nI_new::Int64, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64
     # return nI_new
 end
 
-# Update Beliefs with MC sampling
-function BeliefUpdate(b, a, nb_sim::Int64, pomdp)
-    next_beliefs = Dict{Any, Any}() # a map from observations to beliefs
-    for i in 1:nb_sim
-        s = rand(b)
-        sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
-        if haskey(next_beliefs, o)
-            push!(next_beliefs[o], sp)
-        else
-            next_beliefs[o] = [sp]
-        end
-    end
 
-    return next_beliefs 
-end
 
 # Expand beliefs
 function ExpandBeliefs(fsc::FSC, 
