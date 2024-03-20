@@ -1,4 +1,5 @@
 using POMDPs
+include("Bounds.jl")
 # A belief tree, the root node stores the initial belief
 
 
@@ -16,20 +17,15 @@ function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new::V
     # Evaluate Upper and Lower?
 end
 
-
-
-
 function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning)
     # choose the best action
     a, U = EvaluateUpperBound(root._state_particles, Q_learning_policy)
     # choose an observation that maximiz (U - L) for every b_a_o
+    ### choose the observation that leads to the child making the largest contribution to the gap of U and L at the root
     obs_space = observations(POMDP)
     largest_gap = typemin(Float64)
     o_selected = rand(obs_space)
-
-
-
-    # if node has childs 
+    # if the node has childs 
     for o in obs_space
         ao_edge = Pair(a, o)
         if haskey(root._child_nodes[ao_edge])
@@ -43,10 +39,7 @@ function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64,
         end
     end 
 
-    # what if node doesn't have childs 
-
-
-
+    # if the node doesn't have childs 
     if haskey(root._child_nodes[Pair(a, o)])
         push!(b_list, root._state_particles)
         SampleBeliefs(root._child_nodes[Pair(a, o)], b_list, nb_sim, pomdp)
@@ -59,7 +52,6 @@ function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64,
         end
         push!(b_list, root._child_nodes[Pair(a, o)]._state_particles)
     end
-
 end
 
 
