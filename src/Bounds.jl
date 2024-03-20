@@ -6,6 +6,17 @@ using POMDPs
 using POMDPModelTools
 using Random
 
+
+# We use a Q-learning method to compute Vmdp
+mutable struct Qlearning
+    _Q_table::Dict{Any, Dict{Any, Float64}} #s -> a -> Q
+    _learning_rate::Float64
+    _explore_rate::Float64
+    _action_space
+    _R_max::Float64
+    _R_min::Float64
+end
+
 # Upper bound value can be provided by solving a corresponding MDP
 function EvaluateUpperBound(b, Q_learning_policy::Qlearning)
     max_value = typemin(Float64)
@@ -69,15 +80,7 @@ end
 
 
 
-# We use a Q-learning method to compute Vmdp
-mutable struct Qlearning
-    _Q_table::Dict{Any, Dict{Any, Float64}} #s -> a -> Q
-    _learning_rate::Float64
-    _explore_rate::Float64
-    _action_space
-    _R_max::Float64
-    _R_min::Float64
-end
+
 
 function ChooseActionQlearning(Q_learning_Policy::Qlearning, s)
     a_selected = -1

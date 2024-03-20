@@ -9,13 +9,21 @@ mutable struct BeliefTreeNode
     _child_nodes::Dict{Pair{Any, Any}, BeliefTreeNode}
     _upper_bound::Float64 # Or upper bounds over actions
     _lower_bound::Float64 # Or lower bounds over actions
+    _fsc_node_index::Int64 # link to a FSC node index
 end
+
+
+# should include FSC node in tree construction
 
 function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new::Vector{Any})
     new_tree_node = BeliefTreeNode(b_new, Dict{Pair{Any, Any}, BeliefTreeNode}(), 0, 0)
     b_tree_node_parent._child_nodes[Pair(a, o)] = new_tree_node
     # Evaluate Upper and Lower?
 end
+
+# function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new::Vector{Any}, Q_learning_policy::Qlearning, fsc::FSC)
+
+# end
 
 
 function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning)
@@ -52,7 +60,6 @@ function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64,
 
 
     ## Sample beliefs along the tree
-
     if haskey(root._child_nodes[Pair(a, o)])
         push!(b_list, root._state_particles)
         SampleBeliefs(root._child_nodes[Pair(a, o)], b_list, nb_sim, pomdp)
