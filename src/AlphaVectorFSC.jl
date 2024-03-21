@@ -6,7 +6,7 @@ mutable struct FscNode
     _V_a_o_n::Dict{Any, Dict{Int64, Dict{Int64, Float64}}}
     _V_node_s::Dict{Any, Float64}
     _V_node_s_count::Dict{Any, Int64}
-    _V_node::Float64
+    _V_node::Float64 #a lower bound value
     _best_action_update::Dict{Any,Bool}
 end
 

@@ -13,17 +13,16 @@ mutable struct BeliefTreeNode
 end
 
 
-# should include FSC node in tree construction
-
 function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new::Vector{Any})
     new_tree_node = BeliefTreeNode(b_new, Dict{Pair{Any, Any}, BeliefTreeNode}(), 0, 0)
     b_tree_node_parent._child_nodes[Pair(a, o)] = new_tree_node
     # Evaluate Upper and Lower?
 end
 
-# function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new::Vector{Any}, Q_learning_policy::Qlearning, fsc::FSC)
-
-# end
+# should include FSC node in tree construction?
+function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new::Vector{Any}, Q_learning_policy::Qlearning, fsc::FSC)
+    
+end
 
 
 function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning)
