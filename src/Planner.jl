@@ -43,34 +43,7 @@ function FindMaxValueNode(n:: FscNode, fsc::FSC, a, o)
     return max_V, max_nI
 end
 
-function FindRLower(pomdp, b0, action_space)
-	action_min_r = Dict{Any, Float64}()
-	for a in action_space
-		min_r = typemax(Float64)
-		for i in 1:100
-			s = rand(b0)
-			step = 0
-			while (discount(pomdp)^step) > 0.01 && isterminal(pomdp, s) == false
-				sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
-				s = sp
-				if r < min_r
-					action_min_r[a] = r
-					min_r = r
-				end
-				step += 1
-			end
-		end
-	end
 
-	max_min_r = typemin(Float64)
-	for a in action_space
-		if (action_min_r[a] > max_min_r)
-			max_min_r = action_min_r[a]
-		end
-	end
-
-	return max_min_r / (1 - discount(pomdp))
-end
 
 # function BackUp(b, fsc::FSC, L::Int64, nb_sample::Int64, pomdp)
 function BackUp(nI_new::Int64, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64, pomdp, action_space, obs_space)

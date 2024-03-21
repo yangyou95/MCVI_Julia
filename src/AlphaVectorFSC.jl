@@ -1,6 +1,10 @@
+# some thoughts here:
+# Each fsc node can find its corresponding belief tree node, but it is not true inversely
+# Thus, each fsc node can store its corresponding belief tree node in order to do 1. Belief Update; 2 Bounds Update.
 
+# Yang: What about each FSC node stores a belief tree node?
 mutable struct FscNode
-    _state_particles::Vector{Any}
+    _state_particles::Vector{Any} # Yang: Instead of storing state particles, directly storing a belief tree node
     _Q_action::Dict{Any,Float64}
     _R_action::Dict{Any,Float64} # expected instant reward 
     _V_a_o_n::Dict{Any, Dict{Int64, Dict{Int64, Float64}}}

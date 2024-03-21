@@ -1,6 +1,3 @@
-include("./AlphaVectorFSC.jl")
-
-
 using POMDPModels
 using POMDPs
 using POMDPModelTools
@@ -39,44 +36,50 @@ function EvaluateUpperBound(b, Q_learning_policy::Qlearning)
 end 
 
 
-function EvaluateLowerBound(b, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64)
-	sum_r = 0.0
-	for sim_i in 1:nb_sim
-		step = 0
-		sum_r_sim_i = 0.0
-		s = rand(b)
-		nI = 1
-		bool_random_pi = false
 
-		while (discount^step) > 0.01 && isterminal(pomdp, s) == false
+"""
+Evaluate Lower Bound
+"""
+# Yang comments: not really nesseary since MC-Backup already provides a lower-bound evaluation 
+
+# function EvaluateLowerBound(b, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64)
+# 	sum_r = 0.0
+# 	for sim_i in 1:nb_sim
+# 		step = 0
+# 		sum_r_sim_i = 0.0
+# 		s = rand(b)
+# 		nI = 1
+# 		bool_random_pi = false
+
+# 		while (discount^step) > 0.01 && isterminal(pomdp, s) == false
 
 
-			if nI == -1
-				bool_random_pi = true
-			end
+# 			if nI == -1
+# 				bool_random_pi = true
+# 			end
 
-			if bool_random_pi
-				a = rand(fsc._action_space)
-			else
-				a = GetBestAction(fsc._nodes[nI])
-			end
+# 			if bool_random_pi
+# 				a = rand(fsc._action_space)
+# 			else
+# 				a = GetBestAction(fsc._nodes[nI])
+# 			end
 
-			sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
-			s = sp
-			sum_r_sim_i += (discount^step) * r
+# 			sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
+# 			s = sp
+# 			sum_r_sim_i += (discount^step) * r
 
-			if haskey(fsc._eta[nI], Pair(a, o))
-				nI = fsc._eta[nI][Pair(a, o)]
-			else
-				bool_random_pi = true
-			end
-			step += 1
-		end
-		sum_r += sum_r_sim_i
-	end
+# 			if haskey(fsc._eta[nI], Pair(a, o))
+# 				nI = fsc._eta[nI][Pair(a, o)]
+# 			else
+# 				bool_random_pi = true
+# 			end
+# 			step += 1
+# 		end
+# 		sum_r += sum_r_sim_i
+# 	end
 
-	return sum_r / nb_sim
-end
+# 	return sum_r / nb_sim
+# end
 
 
 
