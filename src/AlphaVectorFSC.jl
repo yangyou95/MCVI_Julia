@@ -7,7 +7,7 @@ mutable struct FscNode
     _state_particles::Vector{Any} # Yang: Instead of storing state particles, directly storing a belief tree node
     _Q_action::Dict{Any,Float64}
     _R_action::Dict{Any,Float64} # expected instant reward 
-    _V_a_o_n::Dict{Any, Dict{Int64, Dict{Int64, Float64}}}
+    _V_a_o_n::Dict{Any, Dict{Any, Dict{Int64, Float64}}}
     _V_node_s::Dict{Any, Float64}
     _V_node_s_count::Dict{Any, Int64}
     _V_node::Float64 #a lower bound value
@@ -26,12 +26,12 @@ function InitFscNode(action_space, obs_space)
     # --- init for actions ---
     init_Q_action = Dict{Any,Float64}()
     init_R_action = Dict{Any,Float64}()
-    init_V_a_o_n = Dict{Any,Dict{Int64,Dict{Int64,Float64}}}() 
+    init_V_a_o_n = Dict{Any,Dict{Any,Dict{Int64,Float64}}}() 
     init_best_action_update = Dict{Any, Bool}()
     for a in action_space
         init_Q_action[a] = 0.0
         init_R_action[a] = 0.0
-        init_V_a_o_n[a] = Dict{Int64, Dict{Int64, Float64}}()
+        init_V_a_o_n[a] = Dict{Any, Dict{Int64, Float64}}()
         for o in obs_space
             init_V_a_o_n[a][o] =  Dict{Int64, Float64}()
         end

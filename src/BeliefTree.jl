@@ -6,7 +6,7 @@ mutable struct BeliefTreeNode
     _state_particles::Vector{Any}
     _child_nodes::Dict{Pair{Any, Any}, BeliefTreeNode}
     _best_action::Any
-    _R_a::Dict{Any, Float64} # a map from actions to expected instant reward 
+    _R_a::Dict{Any, Float64} # a map from actions to expected instant reward, not sure it's useful or not
     _upper_bound::Float64 
     _lower_bound::Float64
     _fsc_node_index::Int64 # link to a FSC node index, default is -1
@@ -28,10 +28,9 @@ end
 """
 Sample Beliefs from a belief tree with heuristics
 """
-function SampleBeliefs(root::BeliefTreeNode, s::Any, depth::Int64, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning, b_list_out)
+function SampleBeliefs(root::BeliefTreeNode, s::Any, depth::Int64, L::Int64, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning, b_list_out)
     # Sample beliefs within considered depth
-    gamma = discount(pomdp)
-    if gamma^depth > 0.01 # very naive condition!!! should improve it later
+    if depth < L # very naive condition!!! should improve it later
         # choose the best action
         a = root._best_action
         # should choose an observation that maximize (U - L) for every b_a_o
@@ -48,8 +47,8 @@ function SampleBeliefs(root::BeliefTreeNode, s::Any, depth::Int64, nb_sim::Int64
 
         # recursive sampling
         push!(b_list_out, root)
-        SampleBeliefs(root._child_nodes[Pair(a, o)], sp, depth + 1, nb_sim, pomdp, Q_learning_policy, b_list_out)
-        # update the U value????
+        SampleBeliefs(root._child_nodes[Pair(a, o)], sp, depth + 1, L, nb_sim, pomdp, Q_learning_policy, b_list_out)
+        # update the U value??? U will be updated in MC-backup ???
     end
 end
 
