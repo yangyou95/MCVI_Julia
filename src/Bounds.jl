@@ -10,8 +10,8 @@ mutable struct Qlearning
     _learning_rate::Float64
     _explore_rate::Float64
     _action_space
-    _R_max::Float64
-    _R_min::Float64
+    # _R_max::Float64
+    # _R_min::Float64
 end
 
 # Upper bound value can be provided by solving a corresponding MDP
@@ -19,10 +19,10 @@ function EvaluateUpperBound(b, Q_learning_policy::Qlearning)
     max_value = typemin(Float64)
     a_best = rand(Q_learning_policy._action_space)
 
-    for (a, value) in Q_learning_policy._action_space
+    for a in Q_learning_policy._action_space
         temp_value = 0.0
         for s in b
-            temp_value += pb * GetQ(Q_learning_policy, s, a)
+            temp_value += GetQ(Q_learning_policy, s, a)
         end
 
         temp_value /= length(b) 
@@ -34,55 +34,6 @@ function EvaluateUpperBound(b, Q_learning_policy::Qlearning)
 
     return a_best, max_value
 end 
-
-
-
-"""
-Evaluate Lower Bound
-"""
-# Yang comments: not really nesseary since MC-Backup already provides a lower-bound evaluation 
-
-# function EvaluateLowerBound(b, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64)
-# 	sum_r = 0.0
-# 	for sim_i in 1:nb_sim
-# 		step = 0
-# 		sum_r_sim_i = 0.0
-# 		s = rand(b)
-# 		nI = 1
-# 		bool_random_pi = false
-
-# 		while (discount^step) > 0.01 && isterminal(pomdp, s) == false
-
-
-# 			if nI == -1
-# 				bool_random_pi = true
-# 			end
-
-# 			if bool_random_pi
-# 				a = rand(fsc._action_space)
-# 			else
-# 				a = GetBestAction(fsc._nodes[nI])
-# 			end
-
-# 			sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
-# 			s = sp
-# 			sum_r_sim_i += (discount^step) * r
-
-# 			if haskey(fsc._eta[nI], Pair(a, o))
-# 				nI = fsc._eta[nI][Pair(a, o)]
-# 			else
-# 				bool_random_pi = true
-# 			end
-# 			step += 1
-# 		end
-# 		sum_r += sum_r_sim_i
-# 	end
-
-# 	return sum_r / nb_sim
-# end
-
-
-
 
 
 function ChooseActionQlearning(Q_learning_Policy::Qlearning, s)
@@ -132,15 +83,16 @@ function GetQ(Q_learning_Policy::Qlearning, s, a)
     end
 end
 
-function UpdateRmaxRmin(Q_learning_Policy::Qlearning, r::Float64)
-    if r > Q_learning_Policy._R_max
-        Q_learning_Policy._R_max = r
-    end
+# function UpdateRmaxRmin(Q_learning_Policy::Qlearning, r::Float64)
+#     if r > Q_learning_Policy._R_max
+#         Q_learning_Policy._R_max = r
+#     end
 
-    if r < Q_learning_Policy._R_min
-        Q_learning_Policy._R_min = r
-    end
-end
+#     if r < Q_learning_Policy._R_min
+#         Q_learning_Policy._R_min = r
+#     end
+# end
+
 function EstiValueQlearning(Q_learning_Policy::Qlearning, nb_sim::Int64, s_input, pomdp)
     a_selected = -1
     gamma = discount(pomdp)
@@ -150,7 +102,7 @@ function EstiValueQlearning(Q_learning_Policy::Qlearning, nb_sim::Int64, s_input
         while (gamma^step) > 0.01 && isterminal(pomdp, s) == false
             a_selected = ChooseActionQlearning(Q_learning_Policy, s)
             sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a_selected)
-            UpdateRmaxRmin(Q_learning_Policy, r)
+            # UpdateRmaxRmin(Q_learning_Policy, r)
             old_Q = GetQ(Q_learning_Policy, s, a_selected) 
             new_Q = old_Q + Q_learning_Policy._learning_rate * (r + gamma * MaxQ(Q_learning_Policy, sp) - old_Q)
             Q_learning_Policy._Q_table[s][a_selected] = new_Q

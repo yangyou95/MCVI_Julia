@@ -1,10 +1,9 @@
 include("./BeliefTree.jl")
 include("./Bounds.jl")
-
+include("./AlphaVectorFSC.jl")
 
 function SimulateTrajectory(nI::Int64, fsc::FSC, s::Any,  L::Int64, pomdp) 
     gamma = discount(pomdp)
-    
     V_n_s = 0.0
     nI_current = nI
     for step in 0:L
@@ -89,67 +88,67 @@ end
 
 
 
-# Expand beliefs
-function ExpandBeliefs(fsc::FSC, 
-                        nI::Int64, 
-                        s, 
-                        nb_sim::Int64,
-                        current_step::Int64, 
-                        L::Int64,
-                        pomdp, 
-                        action_space, 
-                        obs_space, 
-                        belief_node_list::Vector{Int64})
+# # Expand beliefs
+# function ExpandBeliefs(fsc::FSC, 
+#                         nI::Int64, 
+#                         s, 
+#                         nb_sim::Int64,
+#                         current_step::Int64, 
+#                         L::Int64,
+#                         pomdp, 
+#                         action_space, 
+#                         obs_space, 
+#                         belief_node_list::Vector{Int64})
 
-    # Expand beliefs from root
-    if current_step < L && !isterminal(pomdp, s)
+#     # Expand beliefs from root
+#     if current_step < L && !isterminal(pomdp, s)
         
-        if !(nI in belief_node_list)
-            push!(belief_node_list, nI)
-            # println("add node $nI")
-        end 
+#         if !(nI in belief_node_list)
+#             push!(belief_node_list, nI)
+#             # println("add node $nI")
+#         end 
 
-        a = GetBestAction(fsc._nodes[nI])
-        # if a != fsc._nodes[nI]._best_action && 
-            # fsc._nodes[nI]._best_action = a
-        if fsc._nodes[nI]._best_action_update[a] == false 
-            println("adding new beliefs from node $nI with action $a")
-            new_beliefs = BeliefUpdate(fsc._nodes[nI]._state_particles, a, nb_sim, pomdp)
-            for (o, b_new) in new_beliefs
-                n_new = CreatNode(b_new, action_space, obs_space)
-                push!(fsc._nodes, n_new)
-                nI_new = length(fsc._nodes)
-                push!(belief_node_list, nI_new)
-            end
-            fsc._nodes[nI]._best_action_update[a] = true
-        else
-            sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
-            n_nextI = fsc._eta[nI][Pair(a, o)]
-            # println("go one more step to node $n_nextI")
-            ExpandBeliefs(fsc, n_nextI, sp, nb_sim, current_step + 1, L, pomdp, action_space, obs_space, belief_node_list)
-        end
-    end
-end
+#         a = GetBestAction(fsc._nodes[nI])
+#         # if a != fsc._nodes[nI]._best_action && 
+#             # fsc._nodes[nI]._best_action = a
+#         if fsc._nodes[nI]._best_action_update[a] == false 
+#             println("adding new beliefs from node $nI with action $a")
+#             new_beliefs = BeliefUpdate(fsc._nodes[nI]._state_particles, a, nb_sim, pomdp)
+#             for (o, b_new) in new_beliefs
+#                 n_new = CreatNode(b_new, action_space, obs_space)
+#                 push!(fsc._nodes, n_new)
+#                 nI_new = length(fsc._nodes)
+#                 push!(belief_node_list, nI_new)
+#             end
+#             fsc._nodes[nI]._best_action_update[a] = true
+#         else
+#             sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
+#             n_nextI = fsc._eta[nI][Pair(a, o)]
+#             # println("go one more step to node $n_nextI")
+#             ExpandBeliefs(fsc, n_nextI, sp, nb_sim, current_step + 1, L, pomdp, action_space, obs_space, belief_node_list)
+#         end
+#     end
+# end
 
 
-function ExpandBeliefsWithBestActions(fsc::FSC) 
-    nI = 1
-    open_list = [nI]
-    result_list = [nI]
-    while length(open_list) > 0
-        nI = last(open_list)
-        deleteat!(open_list, length(open_list))
-        a = GetBestAction(fsc._nodes[nI])
-        for (k,v) in fsc._eta[nI]
-            if (k[1] == a) && !(v in result_list)
-                push!(open_list, v)
-                push!(result_list, v)  
-            end
-        end
-    end
+# function ExpandBeliefsWithBestActions(fsc::FSC) 
+#     nI = 1
+#     open_list = [nI]
+#     result_list = [nI]
+#     while length(open_list) > 0
+#         nI = last(open_list)
+#         deleteat!(open_list, length(open_list))
+#         a = GetBestAction(fsc._nodes[nI])
+#         for (k,v) in fsc._eta[nI]
+#             if (k[1] == a) && !(v in result_list)
+#                 push!(open_list, v)
+#                 push!(result_list, v)  
+#             end
+#         end
+#     end
 
-    return result_list
-end
+#     return result_list
+# end
 
 
 function MCVIPlanning(b0, 
