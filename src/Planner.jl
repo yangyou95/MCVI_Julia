@@ -2,6 +2,9 @@ include("./BeliefTree.jl")
 include("./Bounds.jl")
 include("./AlphaVectorFSC.jl")
 
+
+# use heuristics here? Vmdp policy?
+# should we have leaf nodes here? trajectory should be in circles?
 function SimulateTrajectory(nI::Int64, fsc::FSC, s::Any,  L::Int64, pomdp) 
     gamma = discount(pomdp)
     V_n_s = 0.0
@@ -27,6 +30,23 @@ function SimulateTrajectory(nI::Int64, fsc::FSC, s::Any,  L::Int64, pomdp)
     end
     return V_n_s
 end
+
+# function SimulateTrajectory(nI::Int64, fsc::FSC, s::Any,  L::Int64, pomdp) 
+#     gamma = discount(pomdp)
+#     V_n_s = 0.0
+#     nI_current = nI
+#     for step in 0:L
+#         if (isterminal(pomdp, s))
+# 			break
+# 		end
+#         a = GetBestAction(fsc._nodes[nI_current])
+#         sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
+#         nI_current = fsc._eta[nI_current][Pair(a, o)]
+#         V_n_s += (gamma^step)*r
+#         s = sp
+#     end
+#     return V_n_s
+# end
 
 function FindMaxValueNode(n:: FscNode, fsc::FSC, a, o)
     max_V = typemin(Float64)
@@ -115,20 +135,27 @@ function MCVIPlanning(b0,
     Tr_root._fsc_node_index = nI_start
 
 
-    for i in 1:nb_iter
+    for i in 1:nb_iter # should be iteration until convergence of (U-L)
         # Add new alpha vector node for each b in belief set
         V_root = typemin(Float64)
         println("--- Iter $i ---")
         println("Belief Expand Process")
         belief_tree_node_list = []
         SampleBeliefs(Tr_root, rand(b0), 0, L, nb_sample, pomdp, Q_learning_policy, belief_tree_node_list)
-
         println("BackUp Process")
         while length(belief_tree_node_list) != 0
             Tr_node = pop!(belief_tree_node_list)
             # nI_input = length(fsc._nodes) + 1 - nI
             BackUp(Tr_node, fsc, RL, L, nb_sample, pomdp, action_space, obs_space)
         end
+        # for j in 1:10
+        # belief_tree_node_list_temp = copy(belief_tree_node_list)
+        # while length(belief_tree_node_list_temp) != 0
+        #     Tr_node = pop!(belief_tree_node_list_temp)
+        #     # nI_input = length(fsc._nodes) + 1 - nI
+        #     BackUp(Tr_node, fsc, RL, L, nb_sample, pomdp, action_space, obs_space)
+        # end
+        # end
     end
     return fsc
 end
