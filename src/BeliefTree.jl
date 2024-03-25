@@ -2,15 +2,14 @@ using POMDPs
 include("Bounds.jl")
 # A belief tree, the root node stores the initial belief
 
-
-
 mutable struct BeliefTreeNode
     _state_particles::Vector{Any}
     _child_nodes::Dict{Pair{Any, Any}, BeliefTreeNode}
     _best_action::Any
-    _upper_bound::Float64 # Or upper bounds over actions
-    _lower_bound::Float64 # Or lower bounds over actions
-    # _fsc_node_index::Int64 # link to a FSC node index
+    _R_a::Dict{Any, Float64} # a map from actions to expected instant reward, not sure it's useful or not
+    _upper_bound::Float64 
+    _lower_bound::Float64
+    _fsc_node_index::Int64 # link to a FSC node index, default is -1
 end
 
 
@@ -18,9 +17,9 @@ end
 """
 Create new belief tree node with U and L initilizations
 """
-function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new::Vector{Any}, Q_learning_policy::Qlearning, pomdp)
-    a, U = EvaluateUpperBound(b_new, Q_learning_policy)
-    new_tree_node = BeliefTreeNode(b_new, Dict{Pair{Any, Any}, a, BeliefTreeNode}(), U, FindRLower(pomdp, b_new, actions(pomdp)))
+function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new, Q_learning_policy::Qlearning, pomdp)
+    a_best_new_belief, U = EvaluateUpperBound(b_new, Q_learning_policy)
+    new_tree_node = BeliefTreeNode(b_new, Dict{Pair{Any, Any}, BeliefTreeNode}(), a_best_new_belief, Dict{Any, Float64}(), U, FindRLower(pomdp, b_new, actions(pomdp)), -1)
     b_tree_node_parent._child_nodes[Pair(a, o)] = new_tree_node
 end
 
@@ -29,13 +28,35 @@ end
 """
 Sample Beliefs from a belief tree with heuristics
 """
-# Sampling from root to leafs
-function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning)
-    # choose the best action, how this best action is updated?
-    a_best = root._best_action
-    # choose an observation that maximize (U - L) for every b_a_o
-    obs_space = observations(POMDP)
-    largest_gap = typemin(Float64)
+function SampleBeliefs(root::BeliefTreeNode, s::Any, depth::Int64, L::Int64, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning, b_list_out)
+    # Sample beliefs within considered depth
+    if depth < L # very naive condition!!! should improve it later
+        # choose the best action
+        a = root._best_action
+        # should choose an observation that maximize (U - L) for every b_a_o
+        # currently just choose the received observation
+        sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
+        # check if this ao edge exist
+        if !haskey(root._child_nodes, Pair(a, o))
+            # Belief update and add the corresponding beliefs
+            o, next_beliefs = BeliefUpdate(root, a, nb_sim, pomdp) 
+            for (o_temp, b_next) in next_beliefs
+                CreateBelieTreefNode(root, a, o_temp, b_next, Q_learning_policy, pomdp)
+            end
+        end
+
+        # recursive sampling
+        push!(b_list_out, root)
+        SampleBeliefs(root._child_nodes[Pair(a, o)], sp, depth + 1, L, nb_sim, pomdp, Q_learning_policy, b_list_out)
+        # update the U value??? U will be updated in MC-backup ???
+    end
+end
+
+
+"""
+Choose the observation that contribute the most to the (U-L) gap at root node
+"""
+function ChooseObservation(node::BeliefTreeNode, a_best::Any)
     o_selected = rand(obs_space)
     bool_has_childs = false
 
@@ -54,45 +75,44 @@ function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64,
         end
     end 
 
-    # if node doesn't have childs with action a_best 
-    if !bool_has_childs
-        next_beliefs = BeliefUpdate(root._state_particles, a_best, nb_sim, pomdp) 
-        for (o_temp, b_next) in next_beliefs
-            CreateBelieTreefNode(root, a_best, o_temp, b_next)
-        end
-    end
-
-
-    ## Sample beliefs along the tree
-    if haskey(root._child_nodes[Pair(a, o)])
-        push!(b_list, root._state_particles)
-        SampleBeliefs(root._child_nodes[Pair(a, o)], b_list, nb_sim, pomdp)
-    else 
-        # Belief update and add the corresponding belief
-        # need a parameter for nb_sim
-        next_beliefs = BeliefUpdate(root._state_particles, a, nb_sim, pomdp) 
-        for (o_temp, b_next) in next_beliefs
-            CreateBelieTreefNode(root, a, o_temp, b_next)
-        end
-        push!(b_list, root._child_nodes[Pair(a, o)]._state_particles)
-    end
+    return bool_has_childs, o_selected
 end
 
-
 # Update Beliefs with MC sampling
-function BeliefUpdate(b, a, nb_sim::Int64, pomdp)
+function BeliefUpdate(node::BeliefTreeNode, a, nb_sim::Int64, pomdp)
     next_beliefs = Dict{Any, Any}() # a map from observations to beliefs
+    observation_counts = Dict{Any, Int64}() # a map that stores observation counts
+
+    # do simulations to gather particles
+    sum_r = 0.0
     for i in 1:nb_sim
-        s = rand(b)
+        s = rand(node._state_particles)
         sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
+        sum_r += r
         if haskey(next_beliefs, o)
             push!(next_beliefs[o], sp)
+            observation_counts[o] += 1
         else
             next_beliefs[o] = [sp]
+            observation_counts[o] = 1
         end
     end
 
-    return next_beliefs 
+    node._R_a[a] = sum_r / nb_sim
+
+    # find which observation is the most probable one
+    o_selected = first(observation_counts).first
+    o_selected_counts = first(observation_counts).second
+    for (k,v) in observation_counts
+        if v > o_selected_counts
+            o_selected_counts = v
+            o_selected = k
+        end
+    end
+
+
+    # return the most probable observation and next beliefs (a map from observations to beliefs)
+    return o_selected, next_beliefs 
 end
 
 
