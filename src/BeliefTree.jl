@@ -29,8 +29,9 @@ end
 """
 Sample Beliefs from a belief tree with heuristics
 """
+# Sampling from root to leafs
 function SampleBeliefs(root::BeliefTreeNode, b_list::Vector{Any}, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning)
-    # choose the best action
+    # choose the best action, how this best action is updated?
     a_best = root._best_action
     # choose an observation that maximize (U - L) for every b_a_o
     obs_space = observations(POMDP)
