@@ -222,3 +222,11 @@ end
 #     node._upper_bound = U
 #     node._lower_bound = L
 # end
+
+
+"""
+Find a same node that has a same best action and outgoing edges
+"""
+function FindSameNode(temp_node::FscNode, fsc::FSC)
+    # codes 
+end

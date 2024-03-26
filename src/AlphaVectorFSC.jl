@@ -3,6 +3,7 @@
 # Thus, each fsc node can store its corresponding belief tree node in order to do 1. Belief Update; 2 Bounds Update.
 
 # Yang: What about each FSC node stores a belief tree node?
+# FSC node should not contain a specific belief?
 mutable struct FscNode
     _state_particles::Vector{Any} # Yang: Instead of storing state particles, directly storing a belief tree node
     _Q_action::Dict{Any,Float64}
@@ -81,4 +82,3 @@ function GetBestAction(n::FscNode)
 
     return best_a
 end
-
