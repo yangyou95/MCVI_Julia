@@ -1,7 +1,3 @@
-# some thoughts here:
-# Each fsc node can find its corresponding belief tree node, but it is not true inversely
-# Thus, each fsc node can store its corresponding belief tree node in order to do 1. Belief Update; 2 Bounds Update.
-
 # Yang: What about each FSC node stores a belief tree node?
 # FSC node should not contain a specific belief?
 mutable struct FscNode
@@ -12,14 +8,16 @@ mutable struct FscNode
     _V_node_s::Dict{Any, Float64}
     _V_node_s_count::Dict{Any, Int64}
     _V_node::Float64 #a lower bound value
-    _best_action_update::Dict{Any,Bool}
+    # _best_action_update::Dict{Any,Bool}
+    _best_action::Any
 end
 
 mutable struct FSC
-    _eta::Vector{Dict{Pair{Any,Int64},Int64}}
+    _eta::Vector{Dict{Pair{Any,Any},Int64}}
     _nodes::Vector{FscNode}
     _action_space
     _obs_space
+    _start_node_index::Int64
 end
 
 function InitFscNode(action_space, obs_space)
@@ -28,7 +26,8 @@ function InitFscNode(action_space, obs_space)
     init_Q_action = Dict{Any,Float64}()
     init_R_action = Dict{Any,Float64}()
     init_V_a_o_n = Dict{Any,Dict{Any,Dict{Int64,Float64}}}() 
-    init_best_action_update = Dict{Any, Bool}()
+    # init_best_action_update = Dict{Any, Bool}()
+    init_best_action = rand(action_space)
     for a in action_space
         init_Q_action[a] = 0.0
         init_R_action[a] = 0.0
@@ -36,7 +35,7 @@ function InitFscNode(action_space, obs_space)
         for o in obs_space
             init_V_a_o_n[a][o] =  Dict{Int64, Float64}()
         end
-        init_best_action_update[a] = false 
+        # init_best_action_update[a] = false 
     end
     init_V_node_s = Dict{Any, Float64}()
     init_V_node_s_count = Dict{Any, Int64}()
@@ -48,7 +47,8 @@ function InitFscNode(action_space, obs_space)
                     init_V_node_s,
                     init_V_node_s_count,
                     init_V_node,
-                    init_best_action_update)
+                    init_best_action)
+                    # init_best_action_update)
 end
 
 function CreatNode(b, action_space, obs_space)
@@ -59,15 +59,16 @@ end
 
 
 function InitFSC(max_node_size::Int64, action_space, obs_space)
-    init_eta = Vector{Dict{Pair{Any,Int64},Int64}}(undef, max_node_size)
+    init_eta = Vector{Dict{Pair{Any,Any},Int64}}(undef, max_node_size)
     for i in range(1, stop=max_node_size)
-        init_eta[i] = Dict{Pair{Any,Int64},Int64}()
+        init_eta[i] = Dict{Pair{Any,Any},Int64}()
     end
     init_nodes = Vector{FscNode}()
     return FSC(init_eta,
                 init_nodes,
                 action_space,
-                obs_space)
+                obs_space,
+                1)
 end
 
 function GetBestAction(n::FscNode)
@@ -80,5 +81,6 @@ function GetBestAction(n::FscNode)
         end
     end
 
+    n._best_action = best_a
     return best_a
 end

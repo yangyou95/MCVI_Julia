@@ -62,57 +62,101 @@ function FindMaxValueNode(n:: FscNode, fsc::FSC, a, o)
 end
 
 
-function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64, pomdp, action_space, obs_space)
-    # check if Tr_node is already processed before
-    nI_new = Tr_node._fsc_node_index
-    if nI_new == -1
-        # not processed before, add a new fsc node to G
-        n_new = CreatNode(Tr_node._state_particles, action_space, obs_space)
-        push!(fsc._nodes, n_new)
-        nI_new = length(fsc._nodes)
-        Tr_node._fsc_node_index = nI_new
-    end
+# function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64, pomdp, action_space, obs_space)
+#     # check if Tr_node is already processed before
+#     nI_new = Tr_node._fsc_node_index
+#     if nI_new == -1
+#         # not processed before, add a new fsc node to G
+#         n_new = CreatNode(Tr_node._state_particles, action_space, obs_space)
+#         push!(fsc._nodes, n_new)
+#         nI_new = length(fsc._nodes)
+#         Tr_node._fsc_node_index = nI_new
+#     end
     
+#     gamma = discount(pomdp)
+#     V_nI_new = fsc._nodes[nI_new]._V_node
+#     println("nI_new $nI_new, V $V_nI_new")
+#     for a in action_space
+#         fsc._nodes[nI_new]._R_action[a] = 0.0
+#         fsc._nodes[nI_new]._Q_action[a] = 0.0 #  Do we need init Q?
+#         for o in obs_space
+#             for nI in 1:length(fsc._nodes)
+#                 fsc._nodes[nI_new]._V_a_o_n[a][o][nI] = 0.0
+#             end
+#         end
+#     end
+
+#     for a in action_space
+#         for i in 1:nb_sample
+#             s = rand(fsc._nodes[nI_new]._state_particles)
+#             sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
+#             fsc._nodes[nI_new]._R_action[a] += r
+#             for nI in 1:length(fsc._nodes)
+#                 V_nI_sp = SimulateTrajectory(nI, fsc, sp, L, pomdp) 
+#                 fsc._nodes[nI_new]._V_a_o_n[a][o][nI] += V_nI_sp
+#             end 
+#         end
+
+#         for o in obs_space
+#             V_a_o, nI_a_o = FindMaxValueNode(fsc._nodes[nI_new], fsc, a, o)
+#             # fsc._eta[nI_new][a][o] = nI_a_o
+#             fsc._eta[nI_new][Pair(a, o)] = nI_a_o
+#             fsc._nodes[nI_new]._Q_action[a] += discount(pomdp)*V_a_o
+#         end
+#         fsc._nodes[nI_new]._Q_action[a] += fsc._nodes[nI_new]._R_action[a]
+#         fsc._nodes[nI_new]._Q_action[a] /= nb_sample
+#     end
+
+#     best_a = GetBestAction(fsc._nodes[nI_new])
+#     V_lower = fsc._nodes[nI_new]._Q_action[best_a]
+#     fsc._nodes[nI_new]._V_node = V_lower
+
+#     Tr_node._best_action = best_a
+#     Tr_node._lower_bound = V_lower
+# end
+
+
+function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64, pomdp, action_space, obs_space)
+    belief = Tr_node._state_particles
+    n_new_temp = CreatNode(belief, action_space, obs_space)
     gamma = discount(pomdp)
-    V_nI_new = fsc._nodes[nI_new]._V_node
-    println("nI_new $nI_new, V $V_nI_new")
     for a in action_space
-        fsc._nodes[nI_new]._R_action[a] = 0.0
-        fsc._nodes[nI_new]._Q_action[a] = 0.0 #  Do we need init Q?
         for o in obs_space
             for nI in 1:length(fsc._nodes)
-                fsc._nodes[nI_new]._V_a_o_n[a][o][nI] = 0.0
+                n_new_temp._V_a_o_n[a][o][nI] = 0.0
             end
         end
     end
 
+
+    temp_eta = Dict{Pair{Any, Any}, Int64}()
     for a in action_space
         for i in 1:nb_sample
-            s = rand(fsc._nodes[nI_new]._state_particles)
+            s = rand(belief)
             sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
-            fsc._nodes[nI_new]._R_action[a] += r
+            n_new_temp._R_action[a] += r
             for nI in 1:length(fsc._nodes)
                 V_nI_sp = SimulateTrajectory(nI, fsc, sp, L, pomdp) 
-                fsc._nodes[nI_new]._V_a_o_n[a][o][nI] += V_nI_sp
+                n_new_temp._V_a_o_n[a][o][nI] += V_nI_sp
             end 
         end
 
         for o in obs_space
-            V_a_o, nI_a_o = FindMaxValueNode(fsc._nodes[nI_new], fsc, a, o)
-            # fsc._eta[nI_new][a][o] = nI_a_o
-            fsc._eta[nI_new][Pair(a, o)] = nI_a_o
-            fsc._nodes[nI_new]._Q_action[a] += discount(pomdp)*V_a_o
+            V_a_o, nI_a_o = FindMaxValueNode(n_new_temp, fsc, a, o)
+            temp_eta[Pair(a, o)] = nI_a_o
+            n_new_temp._Q_action[a] += gamma*V_a_o
         end
-        fsc._nodes[nI_new]._Q_action[a] += fsc._nodes[nI_new]._R_action[a]
-        fsc._nodes[nI_new]._Q_action[a] /= nb_sample
+        n_new_temp._Q_action[a] += n_new_temp._R_action[a]
+        n_new_temp._Q_action[a] /= nb_sample
     end
 
-    best_a = GetBestAction(fsc._nodes[nI_new])
-    V_lower = fsc._nodes[nI_new]._Q_action[best_a]
-    fsc._nodes[nI_new]._V_node = V_lower
-
+    best_a = GetBestAction(n_new_temp)
+    V_lower = n_new_temp._Q_action[best_a]
+    n_new_temp._V_node = V_lower
     Tr_node._best_action = best_a
     Tr_node._lower_bound = V_lower
+    nI = FindOrInsertNode(n_new_temp, temp_eta, obs_space, fsc)
+    Tr_node._fsc_node_index = nI
 end
 
 
@@ -157,6 +201,8 @@ function MCVIPlanning(b0,
         # end
         # end
     end
+
+    fsc._start_node_index = Tr_root._fsc_node_index
     return fsc
 end
 
@@ -164,7 +210,7 @@ end
 function SimulationWithFSC(b0, pomdp, fsc::FSC, steps::Int64)
 	s = rand(b0)
 	sum_r = 0.0
-	nI = 1
+	nI = fsc._start_node_index
 	for i in 1:steps
 		if (isterminal(pomdp, s))
 			break
@@ -192,7 +238,7 @@ end
 function EvaluationWithSimulationFSC(b0, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64)
 	# println("avg sum:", EvaluateLowerBound(b0, pomdp, fsc, discount, nb_sim))
 	sum_r = 0.0
-	nI = 1
+	nI = fsc._start_node_index
     for sim_i in 1:nb_sim
         s = rand(b0)
         sum_sim_i = 0.0
@@ -212,9 +258,32 @@ function EvaluationWithSimulationFSC(b0, pomdp, fsc::FSC, discount::Float64, nb_
     end
 
 	println("sum_r:", sum_r / nb_sim)
-
 end
 
+function EvaluationWithSimulationFSC(b0, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64, L::Int64)
+	# println("avg sum:", EvaluateLowerBound(b0, pomdp, fsc, discount, nb_sim))
+	sum_r = 0.0
+	nI = fsc._start_node_index
+    for sim_i in 1:nb_sim
+        s = rand(b0)
+        sum_sim_i = 0.0
+        step = 0
+        while L > step
+            if (isterminal(pomdp, s))
+                break
+            end
+            a = GetBestAction(fsc._nodes[nI])
+            sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
+            s = sp
+            sum_sim_i += (discount^step) * r
+            nI = fsc._eta[nI][Pair(a, o)]
+            step += 1
+        end
+        sum_r += sum_sim_i
+    end
+
+	println("sum_r:", sum_r / nb_sim)
+end
 
 # function EvaluateNodeBounds(node::BeliefTreeNode, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64, V_mdp::Qlearning)
 #     a, U = EvaluateUpperBound(node._state_particles, V_mdp)
@@ -227,6 +296,32 @@ end
 """
 Find a same node that has a same best action and outgoing edges
 """
-function FindSameNode(temp_node::FscNode, fsc::FSC)
-    # codes 
+function FindOrInsertNode(temp_node::FscNode, temp_eta::Dict{Pair{Any, Any}, Int64}, obs_space, fsc::FSC)
+    for nI in 1:length(fsc._nodes)
+        # First check the best action
+        if fsc._nodes[nI]._best_action == temp_node._best_action
+            for o in obs_space
+                temp_edge = Pair(temp_node._best_action, o)
+                if !haskey(fsc._eta[nI], temp_edge)
+                    return InsertNode(temp_node, temp_eta, fsc)
+                else
+                    if fsc._eta[nI][temp_edge] != temp_eta[temp_edge]
+                        return InsertNode(temp_node, temp_eta, fsc)
+                    end
+                end
+            end
+            # find same node
+            return nI
+        else 
+            return InsertNode(temp_node, temp_eta, fsc)
+        end
+    end
+
+end
+
+function InsertNode(temp_node::FscNode, temp_eta::Dict{Pair{Any, Any}, Int64}, fsc::FSC)
+    push!(fsc._nodes, temp_node)
+    nI_new = length(fsc._nodes)
+    fsc._eta[nI_new] = temp_eta
+    return nI_new
 end
