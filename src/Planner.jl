@@ -181,7 +181,7 @@ function MCVIPlanning(b0,
 
     for i in 1:nb_iter # should be iteration until convergence of (U-L)
         # Add new alpha vector node for each b in belief set
-        V_root = typemin(Float64)
+        # V_root = typemin(Float64)
         println("--- Iter $i ---")
         println("Belief Expand Process")
         belief_tree_node_list = []
@@ -238,11 +238,12 @@ end
 function EvaluationWithSimulationFSC(b0, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64)
 	# println("avg sum:", EvaluateLowerBound(b0, pomdp, fsc, discount, nb_sim))
 	sum_r = 0.0
-	nI = fsc._start_node_index
+	nI_true = fsc._start_node_index
     for sim_i in 1:nb_sim
         s = rand(b0)
         sum_sim_i = 0.0
         step = 0
+        nI = nI_true
         while (discount^step) > 0.01
             if (isterminal(pomdp, s))
                 break
@@ -263,11 +264,12 @@ end
 function EvaluationWithSimulationFSC(b0, pomdp, fsc::FSC, discount::Float64, nb_sim::Int64, L::Int64)
 	# println("avg sum:", EvaluateLowerBound(b0, pomdp, fsc, discount, nb_sim))
 	sum_r = 0.0
-	nI = fsc._start_node_index
+    nI_true = fsc._start_node_index
     for sim_i in 1:nb_sim
         s = rand(b0)
         sum_sim_i = 0.0
         step = 0
+        nI = nI_true
         while L > step
             if (isterminal(pomdp, s))
                 break
