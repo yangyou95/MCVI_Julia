@@ -61,61 +61,6 @@ function FindMaxValueNode(n:: FscNode, fsc::FSC, a, o)
     return max_V, max_nI
 end
 
-
-# function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64, pomdp, action_space, obs_space)
-#     # check if Tr_node is already processed before
-#     nI_new = Tr_node._fsc_node_index
-#     if nI_new == -1
-#         # not processed before, add a new fsc node to G
-#         n_new = CreatNode(Tr_node._state_particles, action_space, obs_space)
-#         push!(fsc._nodes, n_new)
-#         nI_new = length(fsc._nodes)
-#         Tr_node._fsc_node_index = nI_new
-#     end
-    
-#     gamma = discount(pomdp)
-#     V_nI_new = fsc._nodes[nI_new]._V_node
-#     println("nI_new $nI_new, V $V_nI_new")
-#     for a in action_space
-#         fsc._nodes[nI_new]._R_action[a] = 0.0
-#         fsc._nodes[nI_new]._Q_action[a] = 0.0 #  Do we need init Q?
-#         for o in obs_space
-#             for nI in 1:length(fsc._nodes)
-#                 fsc._nodes[nI_new]._V_a_o_n[a][o][nI] = 0.0
-#             end
-#         end
-#     end
-
-#     for a in action_space
-#         for i in 1:nb_sample
-#             s = rand(fsc._nodes[nI_new]._state_particles)
-#             sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
-#             fsc._nodes[nI_new]._R_action[a] += r
-#             for nI in 1:length(fsc._nodes)
-#                 V_nI_sp = SimulateTrajectory(nI, fsc, sp, L, pomdp) 
-#                 fsc._nodes[nI_new]._V_a_o_n[a][o][nI] += V_nI_sp
-#             end 
-#         end
-
-#         for o in obs_space
-#             V_a_o, nI_a_o = FindMaxValueNode(fsc._nodes[nI_new], fsc, a, o)
-#             # fsc._eta[nI_new][a][o] = nI_a_o
-#             fsc._eta[nI_new][Pair(a, o)] = nI_a_o
-#             fsc._nodes[nI_new]._Q_action[a] += discount(pomdp)*V_a_o
-#         end
-#         fsc._nodes[nI_new]._Q_action[a] += fsc._nodes[nI_new]._R_action[a]
-#         fsc._nodes[nI_new]._Q_action[a] /= nb_sample
-#     end
-
-#     best_a = GetBestAction(fsc._nodes[nI_new])
-#     V_lower = fsc._nodes[nI_new]._Q_action[best_a]
-#     fsc._nodes[nI_new]._V_node = V_lower
-
-#     Tr_node._best_action = best_a
-#     Tr_node._lower_bound = V_lower
-# end
-
-
 function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64, pomdp, action_space, obs_space)
     belief = Tr_node._state_particles
     n_new_temp = CreatNode(belief, action_space, obs_space)
@@ -183,23 +128,17 @@ function MCVIPlanning(b0,
         # Add new alpha vector node for each b in belief set
         # V_root = typemin(Float64)
         println("--- Iter $i ---")
+        println("Tr_root upper bound:", Tr_root._upper_bound)
+        println("Tr_root lower bound:", Tr_root._lower_bound)
         println("Belief Expand Process")
         belief_tree_node_list = []
         SampleBeliefs(Tr_root, rand(b0), 0, L, nb_sample, pomdp, Q_learning_policy, belief_tree_node_list)
         println("BackUp Process")
         while length(belief_tree_node_list) != 0
             Tr_node = pop!(belief_tree_node_list)
-            # nI_input = length(fsc._nodes) + 1 - nI
             BackUp(Tr_node, fsc, RL, L, nb_sample, pomdp, action_space, obs_space)
         end
-        # for j in 1:10
-        # belief_tree_node_list_temp = copy(belief_tree_node_list)
-        # while length(belief_tree_node_list_temp) != 0
-        #     Tr_node = pop!(belief_tree_node_list_temp)
-        #     # nI_input = length(fsc._nodes) + 1 - nI
-        #     BackUp(Tr_node, fsc, RL, L, nb_sample, pomdp, action_space, obs_space)
-        # end
-        # end
+
     end
 
     fsc._start_node_index = Tr_root._fsc_node_index
