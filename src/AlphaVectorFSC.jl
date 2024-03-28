@@ -1,14 +1,10 @@
 # Yang: What about each FSC node stores a belief tree node?
 # FSC node should not contain a specific belief?
 mutable struct FscNode
-    _state_particles::Vector{Any} # Yang: Instead of storing state particles, directly storing a belief tree node
     _Q_action::Dict{Any,Float64}
     _R_action::Dict{Any,Float64} # expected instant reward 
     _V_a_o_n::Dict{Any, Dict{Any, Dict{Int64, Float64}}}
-    _V_node_s::Dict{Any, Float64}
-    _V_node_s_count::Dict{Any, Int64}
     _V_node::Float64 #a lower bound value
-    # _best_action_update::Dict{Any,Bool}
     _best_action::Any
 end
 
@@ -21,7 +17,6 @@ mutable struct FSC
 end
 
 function InitFscNode(action_space, obs_space)
-    init_particles = []
     # --- init for actions ---
     init_Q_action = Dict{Any,Float64}()
     init_R_action = Dict{Any,Float64}()
@@ -37,23 +32,16 @@ function InitFscNode(action_space, obs_space)
         end
         # init_best_action_update[a] = false 
     end
-    init_V_node_s = Dict{Any, Float64}()
-    init_V_node_s_count = Dict{Any, Int64}()
     init_V_node = 0.0
-    return FscNode(init_particles,
-                    init_Q_action,
+    return FscNode(init_Q_action,
                     init_R_action,
                     init_V_a_o_n,
-                    init_V_node_s,
-                    init_V_node_s_count,
                     init_V_node,
                     init_best_action)
-                    # init_best_action_update)
 end
 
-function CreatNode(b, action_space, obs_space)
+function CreatNode(action_space, obs_space)
     node = InitFscNode(action_space, obs_space)
-    node._state_particles = b
     return node
 end
 

@@ -63,7 +63,7 @@ end
 
 function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64, pomdp, action_space, obs_space)
     belief = Tr_node._state_particles
-    n_new_temp = CreatNode(belief, action_space, obs_space)
+    n_new_temp = CreatNode(action_space, obs_space)
     gamma = discount(pomdp)
     for a in action_space
         for o in obs_space
@@ -118,7 +118,7 @@ function MCVIPlanning(b0,
 
     action_space = actions(pomdp)
     obs_space = observations(pomdp)
-    node = CreatNode(b0, action_space, obs_space)
+    node = CreatNode(action_space, obs_space)
     push!(fsc._nodes, node)
     nI_start = length(fsc._nodes)
     Tr_root._fsc_node_index = nI_start
