@@ -131,7 +131,7 @@ function MCVIPlanning(b0,
         # Add new alpha vector node for each b in belief set
         # V_root = typemin(Float64)
         println("--- Iter $i ---")
-        UpdateUpperBound(Tr_root, gamma)
+        UpdateUpperBound(Tr_root, gamma, 0)
         println("Tr_root upper bound:", Tr_root._upper_bound)
         println("Tr_root lower bound:", Tr_root._lower_bound)
         println("Precision gap:", abs(Tr_root._upper_bound - Tr_root._lower_bound))

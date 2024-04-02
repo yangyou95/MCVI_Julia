@@ -112,15 +112,15 @@ function BeliefUpdate(node::BeliefTreeNode, a, nb_sim::Int64, pomdp)
     return o_selected, next_beliefs 
 end
 
-function UpdateUpperBound(Tr_node::BeliefTreeNode, gamma::Float64)
+function UpdateUpperBound(Tr_node::BeliefTreeNode, gamma::Float64, depth::Int64)
     if Tr_node._fsc_node_index == -1 || !haskey(Tr_node._R_a ,Tr_node._best_action)
-        return Tr_node._upper_bound
+        return (gamma^depth)*Tr_node._upper_bound
     else 
         a = Tr_node._best_action
         R_a = Tr_node._R_a[a]
         esti_U_future = 0.0
         for (o, w) in Tr_node._a_o_weights[a]
-            U_child = UpdateUpperBound(Tr_node._child_nodes[Pair(a, o)], gamma::Float64)
+            U_child = UpdateUpperBound(Tr_node._child_nodes[Pair(a, o)], gamma::Float64, depth+1)
             esti_U_future += w * U_child
         end
 
