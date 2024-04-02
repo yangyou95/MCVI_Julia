@@ -73,9 +73,9 @@ function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sam
         end
     end
 
-
     temp_eta = Dict{Pair{Any, Any}, Int64}()
     for a in action_space
+        # Multi-threading process can be added here
         for i in 1:nb_sample
             s = rand(belief)
             sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
@@ -96,6 +96,9 @@ function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sam
     end
 
     best_a = GetBestAction(n_new_temp)
+    # maybe here add a upper bound update
+    # update current node's upper bound
+    # todo!
     V_lower = n_new_temp._Q_action[best_a]
     n_new_temp._V_node = V_lower
     Tr_node._best_action = best_a
@@ -122,12 +125,13 @@ function MCVIPlanning(b0,
     push!(fsc._nodes, node)
     nI_start = length(fsc._nodes)
     Tr_root._fsc_node_index = nI_start
-
+    gamma = discount(pomdp)
 
     for i in 1:nb_iter # should be iteration until convergence of (U-L)
         # Add new alpha vector node for each b in belief set
         # V_root = typemin(Float64)
         println("--- Iter $i ---")
+        UpdateUpperBound(Tr_root, gamma)
         println("Tr_root upper bound:", Tr_root._upper_bound)
         println("Tr_root lower bound:", Tr_root._lower_bound)
         println("Belief Expand Process")
@@ -138,7 +142,6 @@ function MCVIPlanning(b0,
             Tr_node = pop!(belief_tree_node_list)
             BackUp(Tr_node, fsc, RL, L, nb_sample, pomdp, action_space, obs_space)
         end
-
     end
 
     fsc._start_node_index = Tr_root._fsc_node_index

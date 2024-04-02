@@ -7,22 +7,20 @@ mutable struct BeliefTreeNode
     _child_nodes::Dict{Pair{Any, Any}, BeliefTreeNode}
     _best_action::Any
     _R_a::Dict{Any, Float64} # a map from actions to expected instant reward, not sure it's useful or not
+    _a_o_weights::Dict{Any, Dict{Any, Float64}} # a map that stores the weights of different observations for a given action
     _upper_bound::Float64 
     _lower_bound::Float64
     _fsc_node_index::Int64 # link to a FSC node index, default is -1
 end
-
-
 
 """
 Create new belief tree node with U and L initilizations
 """
 function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new, Q_learning_policy::Qlearning, pomdp)
     a_best_new_belief, U = EvaluateUpperBound(b_new, Q_learning_policy)
-    new_tree_node = BeliefTreeNode(b_new, Dict{Pair{Any, Any}, BeliefTreeNode}(), a_best_new_belief, Dict{Any, Float64}(), U, FindRLower(pomdp, b_new, actions(pomdp)), -1)
+    new_tree_node = BeliefTreeNode(b_new, Dict{Pair{Any, Any}, BeliefTreeNode}(), a_best_new_belief, Dict{Any, Float64}(), Dict{Any, Dict{Any, Float64}}(), U, FindRLower(pomdp, b_new, actions(pomdp)), -1)
     b_tree_node_parent._child_nodes[Pair(a, o)] = new_tree_node
 end
-
 
 
 """
@@ -82,7 +80,7 @@ end
 function BeliefUpdate(node::BeliefTreeNode, a, nb_sim::Int64, pomdp)
     next_beliefs = Dict{Any, Any}() # a map from observations to beliefs
     observation_counts = Dict{Any, Int64}() # a map that stores observation counts
-
+    node._a_o_weights[a] = Dict{Any, Float64}()
     # do simulations to gather particles
     sum_r = 0.0
     for i in 1:nb_sim
@@ -104,17 +102,33 @@ function BeliefUpdate(node::BeliefTreeNode, a, nb_sim::Int64, pomdp)
     o_selected = first(observation_counts).first
     o_selected_counts = first(observation_counts).second
     for (k,v) in observation_counts
+        node._a_o_weights[a][k] = v/nb_sim
         if v > o_selected_counts
             o_selected_counts = v
             o_selected = k
         end
     end
-
-
     # return the most probable observation and next beliefs (a map from observations to beliefs)
     return o_selected, next_beliefs 
 end
 
+function UpdateUpperBound(Tr_node::BeliefTreeNode, gamma::Float64)
+    if Tr_node._fsc_node_index == -1 || !haskey(Tr_node._R_a ,Tr_node._best_action)
+        return Tr_node._upper_bound
+    else 
+        a = Tr_node._best_action
+        R_a = Tr_node._R_a[a]
+        esti_U_future = 0.0
+        for (o, w) in Tr_node._a_o_weights[a]
+            U_child = UpdateUpperBound(Tr_node._child_nodes[Pair(a, o)], gamma::Float64)
+            esti_U_future += w * U_child
+        end
+
+        Tr_node._upper_bound = R_a + gamma*esti_U_future
+        return Tr_node._upper_bound 
+    end
+
+end
 
 function FindRLower(pomdp, b0, action_space)
 	action_min_r = Dict{Any, Float64}()
