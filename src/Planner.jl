@@ -134,6 +134,7 @@ function MCVIPlanning(b0,
         UpdateUpperBound(Tr_root, gamma)
         println("Tr_root upper bound:", Tr_root._upper_bound)
         println("Tr_root lower bound:", Tr_root._lower_bound)
+        println("Precision gap:", abs(Tr_root._upper_bound - Tr_root._lower_bound))
         println("Belief Expand Process")
         belief_tree_node_list = []
         SampleBeliefs(Tr_root, rand(b0), 0, L, nb_sample, pomdp, Q_learning_policy, belief_tree_node_list)
