@@ -22,31 +22,48 @@ function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new, Q
     b_tree_node_parent._child_nodes[Pair(a, o)] = new_tree_node
 end
 
+"""
+Get current fsc nodes list
+"""
+function GetFscNodeList(node::BeliefTreeNode, FSC_node_list_out::Vector{Int64})
+    if node._fsc_node_index != -1
+        push!(FSC_node_list_out, node._fsc_node_index)
+        if length(node._child_nodes) > 0
+            for (edge, child) in node._child_nodes
+                println("edge first: ",edge.first)
+                println("best a: ", node._best_action)
+                println(edge.first == node._best_action)
+                if edge.first == node._best_action
+                    GetFscNodeList(child, FSC_node_list_out)
+                end
+            end
+        end
+    end
+end
 
 """
 Sample Beliefs from a belief tree with heuristics
 """
-function SampleBeliefs(root::BeliefTreeNode, s::Any, depth::Int64, L::Int64, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning, b_list_out)
+function SampleBeliefs(node::BeliefTreeNode, s::Any, depth::Int64, L::Int64, nb_sim::Int64, pomdp, Q_learning_policy::Qlearning, b_list_out)
     # Sample beliefs within considered depth
-    if depth < L # very naive condition!!! should improve it later
+    if depth < L
         # choose the best action
-        a = root._best_action
+        a = node._best_action
         # should choose an observation that maximize (U - L) for every b_a_o
         # currently just choose the received observation
         sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
         # check if this ao edge exist
-        if !haskey(root._child_nodes, Pair(a, o))
+        if !haskey(node._child_nodes, Pair(a, o))
             # Belief update and add the corresponding beliefs
-            o, next_beliefs = BeliefUpdate(root, a, nb_sim, pomdp) 
+            o, next_beliefs = BeliefUpdate(node, a, nb_sim, pomdp) 
             for (o_temp, b_next) in next_beliefs
-                CreateBelieTreefNode(root, a, o_temp, b_next, Q_learning_policy, pomdp)
+                CreateBelieTreefNode(node, a, o_temp, b_next, Q_learning_policy, pomdp)
             end
         end
 
         # recursive sampling
-        push!(b_list_out, root)
-        SampleBeliefs(root._child_nodes[Pair(a, o)], sp, depth + 1, L, nb_sim, pomdp, Q_learning_policy, b_list_out)
-        # update the U value??? U will be updated in MC-backup ???
+        push!(b_list_out, node)
+        SampleBeliefs(node._child_nodes[Pair(a, o)], sp, depth + 1, L, nb_sim, pomdp, Q_learning_policy, b_list_out)
     end
 end
 
