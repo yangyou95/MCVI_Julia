@@ -23,16 +23,29 @@ function CreateBelieTreefNode(b_tree_node_parent::BeliefTreeNode, a, o, b_new, Q
 end
 
 """
-Get current fsc nodes list
+Get current fsc nodes list with best actions
 """
 function GetFscNodeList(node::BeliefTreeNode, FSC_node_list_out::Vector{Int64})
     if node._fsc_node_index != -1
         push!(FSC_node_list_out, node._fsc_node_index)
         if length(node._child_nodes) > 0
             for (edge, child) in node._child_nodes
-                println("edge first: ",edge.first)
-                println("best a: ", node._best_action)
-                println(edge.first == node._best_action)
+                GetFscNodeList(child, FSC_node_list_out)
+            end
+        end
+    end
+end
+
+
+
+"""
+Get current fsc nodes list with best actions
+"""
+function GetFscNodeListWithBestActions(node::BeliefTreeNode, FSC_node_list_out::Vector{Int64})
+    if node._fsc_node_index != -1
+        push!(FSC_node_list_out, node._fsc_node_index)
+        if length(node._child_nodes) > 0
+            for (edge, child) in node._child_nodes
                 if edge.first == node._best_action
                     GetFscNodeList(child, FSC_node_list_out)
                 end

@@ -35,10 +35,12 @@ function SimulateTrajectory(nI::Int64, fsc::FSC, s::Any, L::Int64, RL::Float64, 
     return V_n_s
 end
 
+# function FindMaxValueNode(n::FscNode, fsc_node_list::Vector{Int64}, fsc::FSC, a, o)
 function FindMaxValueNode(n::FscNode, fsc::FSC, a, o)
     max_V = typemin(Float64)
     max_nI = 1
     for nI in 1:length(fsc._nodes)
+    # for nI in fsc_node_list
         V_temp = n._V_a_o_n[a][o][nI]
         if V_temp > max_V
             max_V = V_temp
@@ -48,6 +50,7 @@ function FindMaxValueNode(n::FscNode, fsc::FSC, a, o)
     return max_V, max_nI
 end
 
+# function BackUp(Tr_node::BeliefTreeNode, fsc_node_list::Vector{Int64}, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64, pomdp, action_space, obs_space)
 function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sample::Int64, pomdp, action_space, obs_space)
     belief = Tr_node._state_particles
     n_new_temp = CreatNode(action_space, obs_space)
@@ -55,6 +58,7 @@ function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sam
     for a in action_space
         for o in obs_space
             for nI in 1:length(fsc._nodes)
+            # for nI in fsc_node_list
                 n_new_temp._V_a_o_n[a][o][nI] = 0.0
             end
         end
@@ -68,12 +72,14 @@ function BackUp(Tr_node::BeliefTreeNode, fsc::FSC, RL::Float64, L::Int64, nb_sam
             sp, o, r = @gen(:sp, :o, :r)(pomdp, s, a)
             n_new_temp._R_action[a] += r
             for nI in 1:length(fsc._nodes)
+            # for nI in fsc_node_list
                 V_nI_sp = SimulateTrajectory(nI, fsc, sp, L, RL, pomdp) 
                 n_new_temp._V_a_o_n[a][o][nI] += V_nI_sp
             end 
         end
 
         for o in obs_space
+            # V_a_o, nI_a_o = FindMaxValueNode(n_new_temp, fsc_node_list, fsc, a, o)
             V_a_o, nI_a_o = FindMaxValueNode(n_new_temp, fsc, a, o)
             temp_eta[Pair(a, o)] = nI_a_o
             n_new_temp._Q_action[a] += gamma*V_a_o
@@ -126,6 +132,10 @@ function MCVIPlanning(b0,
         belief_tree_node_list = []
         belief_sample_time_taken = @elapsed SampleBeliefs(Tr_root, rand(b0), 0, L, nb_sample, pomdp, Q_learning_policy, belief_tree_node_list)
         println("Belief Expand Process takes $belief_sample_time_taken seconds")
+
+        # this is meant to prune FSC nodes, only select dominiated nodes for backup, seems not work properly
+        # fsc_node_list = Vector{Int64}()
+        # GetFscNodeList(Tr_root, fsc_node_list) 
 
         backup_elapsed_time = @elapsed begin
             while length(belief_tree_node_list) != 0
