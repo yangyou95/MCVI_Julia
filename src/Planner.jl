@@ -258,9 +258,12 @@ end
 Find a same node that has a same best action and outgoing edges
 """
 function FindOrInsertNode(temp_node::FscNode, temp_eta::Dict{Pair{Any, Any}, Int64}, obs_space, fsc::FSC)
+    
     for nI in 1:length(fsc._nodes)
         # First check the best action
-        if fsc._nodes[nI]._best_action == temp_node._best_action
+        if fsc._nodes[nI]._best_action != temp_node._best_action
+            continue
+        else 
             for o in obs_space
                 temp_edge = Pair(temp_node._best_action, o)
                 if !haskey(fsc._eta[nI], temp_edge)
@@ -273,10 +276,9 @@ function FindOrInsertNode(temp_node::FscNode, temp_eta::Dict{Pair{Any, Any}, Int
             end
             # find same node
             return nI
-        else 
-            return InsertNode(temp_node, temp_eta, fsc)
-        end
+        end 
     end
+    return InsertNode(temp_node, temp_eta, fsc)
 
 end
 

@@ -162,8 +162,9 @@ end
 
 function FindRLower(pomdp, b0, action_space)
 	action_min_r = Dict{Any, Float64}()
+    min_r = typemax(Float64)
 	for a in action_space
-		min_r = typemax(Float64)
+        action_min_r[a] = min_r
 		for i in 1:100
 			s = rand(b0)
 			step = 0
